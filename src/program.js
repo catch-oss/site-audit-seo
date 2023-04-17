@@ -101,6 +101,10 @@ program.postParse = async () => {
   // lang
   if (!['en', 'fr', 'de', 'ru'].includes(program.lang)) program.lang = systemLocale;
 
+  if (program.extraHeaders && typeof program.extraHeaders !== "object") {
+    program.extraHeaders = JSON.parse(program.extraHeaders);
+  }  
+    
   // no open file when no xlsx generate
   if (!program.xlsx) program.openFile = false;
 
@@ -157,9 +161,6 @@ program.postParse = async () => {
   createDirIfNotExists(program.outDir);
 }
 
-
-
-
 program.option('-u --urls <urls>', 'Comma separated url list for scan', list).
   option('-p, --preset <preset>',
     'Table preset (minimal, seo, headers, parse, lighthouse, lighthouse-all)',
@@ -181,6 +182,8 @@ program.option('-u --urls <urls>', 'Comma separated url list for scan', list).
   option('--docs-extensions',
     `Comma-separated extensions that will be add to table (default: ${defaultDocs.join(
       ',')})`, list).
+  option('--extra-headers', `extra headers we want the crawler to send`,
+    getConfigVal('extraHeaders', {})).
   option('--follow-xml-sitemap', `Follow sitemap.xml`,
     getConfigVal('followXmlSitemap', false)).
   option('--ignore-robots-txt', `Ignore disallowed in robots.txt`,
@@ -255,7 +258,8 @@ program.getOptions = () => {
     obeyRobotsTxt: !program.ignoreRobotsTxt,    // chrome-crawler, не учитывать блокировки в robots.txt
     influxdb: program.influxdb,                 // конфиг influxdb
     urls: program.urls,                         // адреса для одиночного сканирования
-    disablePlugins: program.disablePlugins
+    disablePlugins: program.disablePlugins,
+    extraHeaders: program.extraHeaders
   };
   return opts;
 }
@@ -284,6 +288,11 @@ program.outBrief = (options) => {
       name: 'Delay',
       value: program.delay,
       comment: '--delay ms',
+    },
+    {
+      name: 'Extra Headers',
+      value: program.delay,
+      comment: '--extra-headers {"X-Header-Name":"Header Value"}',
     },
     {
       name: 'Ignore robots.txt',
