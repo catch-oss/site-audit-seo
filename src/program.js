@@ -182,7 +182,7 @@ program.option('-u --urls <urls>', 'Comma separated url list for scan', list).
   option('--docs-extensions',
     `Comma-separated extensions that will be add to table (default: ${defaultDocs.join(
       ',')})`, list).
-  option('--extra-headers', `extra headers we want the crawler to send`,
+  option('--extra-headers <json>', `extra headers we want the crawler to send`,
     getConfigVal('extraHeaders', {})).
   option('--follow-xml-sitemap', `Follow sitemap.xml`,
     getConfigVal('followXmlSitemap', false)).
