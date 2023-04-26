@@ -1,8 +1,11 @@
+import {createRequire} from 'module';
+const require = createRequire(import.meta.url);
+
 const fs = require('fs');
 const readline = require('readline');
 const {google} = require('googleapis');
 const path = require('path');
-const color = require('../color');
+import color from '../color.js';
 
 // If modifying these scopes, delete token.json.
 const SCOPES = [
@@ -18,7 +21,7 @@ const folderName = 'site-audit-seo';
 
 let folderId;
 
-module.exports = async (filePath) => {
+export default async (filePath) => {
   // Load client secrets from a local file.
   /*fs.readFile('credentials.json', (err, content) => {
     if (err) return console.log('Error loading client secret file:', err);

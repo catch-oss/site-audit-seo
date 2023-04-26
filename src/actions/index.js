@@ -1,8 +1,17 @@
 // actions runs after scan
 
-var normalizedPath = require('path').join(__dirname, '.');
+import copyJsonToReports from './copyJsonToReports.js';
+import publishGoogleDrive from './publishGoogleDrive.js';
+import saveAsJson from './saveAsJson.js';
+import saveAsXlsx from './saveAsXlsx.js';
+import startViewer from './startViewer.js';
+import uploadJson from './uploadJson.js';
 
-require('fs').readdirSync(normalizedPath).forEach(function(file) {
-  const moduleName = file.split('.')[0];
-  if (file !== 'index.js') exports[moduleName] = require('./' + file);
-});
+export default {
+  copyJsonToReports,
+  publishGoogleDrive,
+  saveAsJson,
+  saveAsXlsx,
+  startViewer,
+  uploadJson
+};

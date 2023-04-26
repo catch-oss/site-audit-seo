@@ -1,7 +1,10 @@
+import {createRequire} from 'module';
+const require = createRequire(import.meta.url);
+
 const fs = require('fs');
 const path = require('path');
 
-exports.getJsonName = (jsonPath, short = false) => {
+export const getJsonName = (jsonPath, short = false) => {
   const offset = new Date().getTimezoneOffset() * 60000;
   const dateLocal = new Date(Date.now() - offset)
   let date = dateLocal.toISOString().
@@ -15,7 +18,7 @@ exports.getJsonName = (jsonPath, short = false) => {
   return uploadName;
 }
 
-exports.initDataDir = (dataDir) => {
+export const initDataDir = (dataDir) => {
   const packageJson = path.join(dataDir, 'package.json');
   if (!fs.existsSync(packageJson)) {
     console.log(`Create empty package.json in ${dataDir}`);

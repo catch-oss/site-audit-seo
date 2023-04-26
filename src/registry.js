@@ -1,7 +1,11 @@
+import {createRequire} from 'module';
+const require = createRequire(import.meta.url);
+
 const fs = require('fs');
 const path = require('path');
-const color = require('./color');
+
 const userDir = './data';
+
 const plugins = [];
 let loaded = false;
 
@@ -76,24 +80,19 @@ function getPlugins() {
 async function execPlugins(jsonPath, options, type = 'any') {
   load();
   if (!plugins) return;
-  // console.log(`\n${color.white}exec plugins (${type}):${color.reset}`);
   for (let plugin of plugins) {
     if (options.disablePlugins.includes(plugin.name)){
       continue;
     }
     if (type !== 'any' && plugin.type != type) continue;
-
-    // console.log(`exec plugin ${plugin.name} (type ${type}):`);
-    // console.log('plugin: ', plugin);
     const relPath = path.join('..', plugin.path);
     const pluginObj = require(relPath);
     await pluginObj(jsonPath, options);
-    // console.log('');
   }
 }
 
-module.exports = {
+export default {
   load,
   getPlugins,
   execPlugins,
-}
+};

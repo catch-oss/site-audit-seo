@@ -1,12 +1,15 @@
-const fs = require('fs');
-const path = require('path');
+import {createRequire} from 'module';
+const require = createRequire(import.meta.url);
+
+import fs from 'fs';
 const systemLocale = getDefaultLocale(); // should be before scrap-site (before lighthouse require)
-const {program} = require('commander');
-const packageJson = require('../package.json');
-const config = require('./config');
-const color = require('./color');
-const os = require('os');
-const expandHomedir = require('expand-home-dir');
+import { program } from 'commander';
+import packageJson from '../package.json' assert { type: 'json' };
+import os from 'os';
+import expandHomedir from 'expand-home-dir';
+
+import config from './config.js';
+import color from './color.js';
 
 const defaultDocs = [
   'doc',
@@ -103,8 +106,8 @@ program.postParse = async () => {
 
   if (program.extraHeaders && typeof program.extraHeaders !== "object") {
     program.extraHeaders = JSON.parse(program.extraHeaders);
-  }  
-    
+  }
+
   // no open file when no xlsx generate
   if (!program.xlsx) program.openFile = false;
 
@@ -374,4 +377,4 @@ program.outBrief = (options) => {
   if (options.socket) options.socket.emit('status' + (options.socket.uid || ''), '&nbsp;');
 }
 
-module.exports = program;
+export default program;

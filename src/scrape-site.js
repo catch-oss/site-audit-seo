@@ -1,21 +1,27 @@
+import {createRequire} from 'module';
+const require = createRequire(import.meta.url);
+
 // see API - https://github.com/yujiosaka/headless-chrome-crawler/blob/master/docs/API.md#event-requeststarted
 const fs = require('fs');
 const path = require('path');
-const {saveAsXlsx, saveAsJson, copyJsonToReports, uploadJson, publishGoogleDrive, startViewer} = require(
-  './actions');
+
 const axios = require('axios');
 const HCCrawler = require('@popstas/headless-chrome-crawler');
 const CSVExporter = require('@popstas/headless-chrome-crawler/exporter/csv');
 const url = require('url');
-const {validateResults, getValidationSum} = require('./validate');
-const {exec} = require('child_process');
-const lighthouse = require('lighthouse');
+const { exec } = require('child_process');
+import lighthouse from 'lighthouse';
 const chromeLauncher = require('chrome-launcher');
 const sanitize = require("sanitize-filename");
-// поля описаны в API по ссылке выше
-const fieldsPresets = require('./presets/scraperFields');
-const color = require('./color');
-const registry = require('./registry');
+
+import validate from './validate.js';
+import actions from './actions/index.js';
+import fieldsPresets from './presets/scraperFields.js';
+import color from './color.js';
+import registry from './registry.js';
+
+const { saveAsXlsx, saveAsJson, copyJsonToReports, uploadJson, publishGoogleDrive, startViewer } = actions;
+const { validateResults, getValidationSum } = validate;
 
 const DEBUG = true; // выключить, если не нужны console.log на каждый запрос (не будет видно прогресс)
 
@@ -54,7 +60,7 @@ function socketSend(socket, event, msg) {
   }
 }
 
-module.exports = async (baseUrl, options = {}) => {
+export default async (baseUrl, options = {}) => {
   const domain = url.parse(baseUrl).hostname || baseUrl;
   const protocol = url.parse(baseUrl).protocol;
 
@@ -68,7 +74,7 @@ module.exports = async (baseUrl, options = {}) => {
 
   // const plugins = registry.getPlugins();
   // if (plugins) console.log('loaded plugins: ', plugins.map(p => p.name).join(', '));
-  
+
   const parseUrls = async (url) => {
     const urls = [];
     const regex = /(?:(?:https?|ftp|file):\/\/|www\.|ftp\.)(?:\([-A-Z0-9+&#\/%=~_|$?!:,.]*\)|[-A-Z0-9+&#\/%=~_|$?!:,.])*(?:\([-A-Z0-9+&#\/%=~_|$?!:,.]*\)|[A-Z0-9+&#\/%=~_|$])/ig
@@ -177,7 +183,7 @@ module.exports = async (baseUrl, options = {}) => {
     skipRequestedRedirect: true, // all redirects marks as visited
     depthPriority: false, // without it find not all pages
     retryCount: 1,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'], // puppeteer freezes without it
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--single-process'], // puppeteer freezes without it
     exporter,
 
     // url ignore rules
@@ -585,7 +591,9 @@ module.exports = async (baseUrl, options = {}) => {
   crawler.on('requestfailed', error => {
     if (crawler._browser._connection._closed) return; // catch error after scan
     console.error(
-      `${color.red}Failed: ${decodeURI(error.options.url)}${color.reset}`);
+      `${color.red}Failed: ${decodeURI(error.options.url)}${color.reset}`,
+      error.messge
+    );
   });
   crawler.on('requestdisallowed', options => {
     log(`Disallowed in robots.txt: ${decodeURI(options.url)}`, options.socket);

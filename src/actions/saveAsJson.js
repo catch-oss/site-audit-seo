@@ -1,14 +1,21 @@
+import {createRequire} from 'module';
+const require = createRequire(import.meta.url);
+
+import fieldPresets from '../presets/fields.js';
+import filters from '../presets/filters.js';
+import columns from '../presets/columns.js';
+
+// not sure why this is necessary
+const fields = fieldPresets.fields;
+
 const fs = require('fs');
 const csv = require('csvtojson');
-const {fields} = require('../presets/fields');
-const filters = require('../presets/filters');
-const columns = require('../presets/columns');
 
 const defaultField = 'url';
 
 // return json object
 // TODO: too much arguments
-module.exports = async (csvPath, jsonPath, lang, preset, defaultFilter, url, args, scanTime) => {
+export default async (csvPath, jsonPath, lang, preset, defaultFilter, url, args, scanTime) => {
   // read csv to workbook
   const data = {};
 

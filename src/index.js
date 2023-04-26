@@ -1,10 +1,16 @@
 #!/usr/bin/env node
+
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+
 const process = require('process');
-const program = require('./program');
-const scrapSite = require('./scrap-site');
-const {saveAsXlsx, saveAsJson, uploadJson, publishGoogleDrive, startViewer} = require(
-  './actions');
-const {exec} = require('child_process');
+const { exec } = require('child_process');
+
+import program from './program.js';
+import scrapeSite from './scrape-site.js';
+import actions from './actions/index.js';
+
+const { saveAsXlsx, saveAsJson, uploadJson, publishGoogleDrive, startViewer } = actions;
 
 async function start() {
   program.parse(process.argv);
@@ -60,7 +66,7 @@ async function start() {
 
   for (let site of sites) {
     // console.log('program: ', program);
-    await scrapSite(site, opts);
+    await scrapeSite(site, opts);
   }
 }
 

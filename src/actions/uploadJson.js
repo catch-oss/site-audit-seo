@@ -1,8 +1,11 @@
+import {createRequire} from 'module';
+const require = createRequire(import.meta.url);
+
 const fs = require('fs');
 const axios = require('axios');
-const {getJsonName} = require('../utils');
+import { getJsonName } from '../utils.js';
 
-module.exports = async (jsonPath) => {
+export default async (jsonPath) => {
   const data = fs.readFileSync(jsonPath, 'utf8');
   // const raw = JSON.stringify(data);
 

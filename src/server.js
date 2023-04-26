@@ -1,11 +1,14 @@
+import {createRequire} from 'module';
+const require = createRequire(import.meta.url);
+
 const path = require('path');
 const lowdb = require('lowdb');
 const FileSync = require('lowdb/adapters/FileSync');
 
-const pjson = require('../package.json');
-const scrapSite = require("./scrap-site");
-const registry = require("./registry");
-const utils = require("./utils");
+import pjson from '../package.json';
+import scrapSite from "./scrap-site.js";
+import registry from "./registry.js";
+import utils from "./utils.js";
 
 const queue = require("queue");
 const express = require("express");

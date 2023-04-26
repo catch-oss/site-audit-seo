@@ -1,4 +1,7 @@
-const {at} = require('lodash');
+import {createRequire} from 'module';
+const require = createRequire(import.meta.url);
+
+const { at } = require('lodash');
 
 const lighthouseValidateScore = {
   success: (v) => v >= 90,
@@ -74,9 +77,7 @@ const colsValidate = {
 
 const validationSum = {};
 
-exports.colsValidate = colsValidate;
-
-exports.validateResults = (results, fields) => {
+const validateResults = (results, fields) => {
   const validate = {};
   for (let fName of fields) {
     // get value
@@ -108,4 +109,6 @@ exports.validateResults = (results, fields) => {
   return validate;
 };
 
-exports.getValidationSum = () => validationSum;
+const getValidationSum = () => validationSum;
+
+export default { colsValidate, validateResults, getValidationSum };

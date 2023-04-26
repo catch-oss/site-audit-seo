@@ -1,6 +1,10 @@
-const registry = require('../registry');
-const fieldsLighthouse = require('./fields-lighthouse');
-const fieldsLighthouseEn = require('./fields-lighthouse-en');
+import {createRequire} from 'module';
+const require = createRequire(import.meta.url);
+
+import registry from '../registry.js';
+import fieldsLighthouse from './fields-lighthouse.js';
+import fieldsLighthouseEn from './fields-lighthouse-en.js';
+
 const fields = [
   {
     name: 'url',
@@ -461,5 +465,4 @@ for (let plugin of plugins) {
   }
 }
 
-
-module.exports = {fields, getFieldByName};
+export default { fields, getFieldByName };

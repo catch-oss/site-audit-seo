@@ -1,10 +1,13 @@
+import {createRequire} from 'module';
+const require = createRequire(import.meta.url);
+
 const fs = require('fs');
 const sanitize = require("sanitize-filename");
-const {getJsonName} = require('../utils');
+import { getJsonName } from '../utils.js';
 
 const defaultLocalDir = 'data/reports/';
 
-module.exports = (jsonPath, uid = '', localDir = defaultLocalDir) => {
+export default (jsonPath, uid = '', localDir = defaultLocalDir) => {
   // user subdir if uid
   if (uid) {
     const userDir = sanitize(uid.slice(0, 5));

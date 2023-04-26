@@ -1,7 +1,10 @@
+import {createRequire} from 'module';
+const require = createRequire(import.meta.url);
+
 const fs = require('fs');
 const express = require('express');
 
-module.exports = async (jsonPath, webPath = false) => {
+export default async (jsonPath, webPath = false) => {
   const app = express();
   const port = 3001;
 
