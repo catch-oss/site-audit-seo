@@ -442,6 +442,7 @@ export default async (baseUrl, options = {}) => {
             'interactive',
           ],*/
           // onlyCategories : [ 'performance'/*, 'pwa', 'accessibility', 'best-practices', 'seo'*/ ],
+          extraHeaders: options.extraHeaders,
           port: lighthouseChrome.port,
           locale: options.lang,
         };
@@ -461,7 +462,8 @@ export default async (baseUrl, options = {}) => {
           'accessibility',
           'best-practices',
           'seo',
-          'pwa'];
+          'pwa'
+        ];
         const lighthouseData = {
           scores: {},
         };
