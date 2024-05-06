@@ -1,15 +1,16 @@
-import {createRequire} from 'module';
-const require = createRequire(import.meta.url);
-
 import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 const systemLocale = getDefaultLocale(); // should be before scrap-site (before lighthouse require)
 import { program } from 'commander';
-import packageJson from '../package.json' assert { type: 'json' };
+import config from './config.js';
+import color from './color.js';
 import os from 'os';
 import expandHomedir from 'expand-home-dir';
 
-import config from './config.js';
-import color from './color.js';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const packageJsonPath = path.join(__dirname, '..', 'package.json');
+const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
 
 const defaultDocs = [
   'doc',
@@ -95,12 +96,7 @@ function getDefaultLocale() {
 }
 
 
-
 program.postParse = async () => {
-  if (program.openFile === undefined) {
-    program.openFile = ['darwin', 'win32'].includes(os.platform()); // only for win and mac
-  }
-
   // lang
   if (!['en', 'fr', 'de', 'ru'].includes(program.lang)) program.lang = systemLocale;
 
@@ -130,11 +126,22 @@ program.postParse = async () => {
     program.lighthouse = true;
   }
 
-  // c = 2, when lighthouse c = 1
+  // c = 2, when lighthouse or screenshot -> c = 1
   if (program.concurrency === undefined) {
-    program.concurrency = getConfigVal('concurrency', os.cpus().length);
+    program.concurrency = getConfigVal('concurrency', Math.min(10, os.cpus().length));
+    if (config.maxConcurrency && program.concurrency > config.maxConcurrency) {
+      program.concurrency = config.maxConcurrency;
+    }
   }
+
+  if (config.maxRequests && (!program.maxRequests || program.maxRequests > config.maxRequests)) {
+    program.maxRequests = config.maxRequests;
+  }
+
   if (program.lighthouse) {
+    program.concurrency = 1;
+  }
+  if (program.screenshot) {
     program.concurrency = 1;
   }
 
@@ -166,14 +173,17 @@ program.postParse = async () => {
 
 program.option('-u --urls <urls>', 'Comma separated url list for scan', list).
   option('-p, --preset <preset>',
-    'Table preset (minimal, seo, headers, parse, lighthouse, lighthouse-all)',
+    'Table preset (minimal, seo, seo-minimal, headers, parse, lighthouse, lighthouse-all)',
     getConfigVal('preset', 'seo')).
+  option('-t, --timeout <timeout>',
+    'Timeout for page request, in ms',
+    getConfigVal('timeout', 20000)).
   option('-e, --exclude <fields>',
     'Comma separated fields to exclude from results', list).
   option('-d, --max-depth <depth>', 'Max scan depth',
     getConfigVal('maxDepth', 10)).
   option('-c, --concurrency <threads>',
-    'Threads number (default: by cpu cores)').
+    `Threads number (default: ${Math.min(10, os.cpus().length)})`).
   option('--lighthouse', 'Appends base Lighthouse fields to preset').
   option('--delay <ms>', 'Delay between requests', parseInt, 0).
   option('-f, --fields <json>',
@@ -182,7 +192,7 @@ program.option('-u --urls <urls>', 'Comma separated url list for scan', list).
   option('--default-filter <defaultFilter>', 'Default filter when JSON viewed, example: depth>1').
   option('--no-skip-static', `Scan static files`).
   option('--no-limit-domain', `Scan not only current domain`).
-  option('--docs-extensions',
+  option('--docs-extensions <ext>',
     `Comma-separated extensions that will be add to table (default: ${defaultDocs.join(
       ',')})`, list).
   option('--extra-headers <json>', `extra headers we want the crawler to send`,
@@ -193,41 +203,38 @@ program.option('-u --urls <urls>', 'Comma separated url list for scan', list).
     getConfigVal('ignoreRobotsTxt', false)).
   option('--url-list', `assume that --url contains url list, will set -d 1 --no-limit-domain --ignore-robots-txt`,
     getConfigVal('ignoreRobotsTxt', false)).
+  option('--remove-selectors <selectors>', `CSS selectors for remove before screenshot, comma separated`,
+    '.matter-after,#matter-1,[data-slug]').
   option('-m, --max-requests <num>', `Limit max pages scan`,
     parseInt, getConfigVal('maxRequests', 0)).
   option('--influxdb-max-send <num>', `Limit send to InfluxDB`,
     getConfigVal('influxdb.maxSendCount', 5)).
   option('--no-headless', `Show browser GUI while scan`,
     !getConfigVal('headless', true)).
-  option('--remove-csv', `No delete csv after xlsx generate`,
+  option('--remove-csv', `Delete csv after json generate`,
     getConfigVal('removeCsv', true)).
-  option('--remove-json', `No delete json after serve`,
+  option('--remove-json', `Delete json after serve`,
     getConfigVal('removeJson', true)).
-  option('--no-remove-csv', `No delete csv after xlsx generate`).
+  option('--no-remove-csv', `No delete csv after generate`).
   option('--no-remove-json', `No delete json after serve`).
   option('--out-dir <dir>', `Output directory`,
     getConfigVal('outDir', '~/site-audit-seo/')).
   option('--out-name <name>', `Output file name, default: domain`).
-  option('--csv <path>', `Skip scan, only convert csv to xlsx`).
-  option('--xlsx', `Save as XLSX`, getConfigVal('xlsx', false)).
-  option('--gdrive', `Publish sheet to google docs`,
-    getConfigVal('gdrive', false)).
+  option('--csv <path>', `Skip scan, only convert existing csv to json`).
   option('--json', `Save as JSON`, getConfigVal('json', true)).
   option('--no-json', `No save as JSON`, !getConfigVal('json', true)).
   option('--upload', `Upload JSON to public web`,
     getConfigVal('upload', false)).
   option('--no-color', `No console colors`).
+  option('--partial-report <partialReport>', ``).
   option('--lang <lang>', `Language (en, ru, default: system language)`,
     getConfigVal('lang', undefined)).
-  option('--open-file',
-    `Open file after scan (default: yes on Windows and MacOS)`,
-    getConfigVal('openFile', undefined)).
-  option('--no-open-file', `Don't open file after scan`).
   option('--no-console-validate', `Don't output validate messages in console`).
   option('--disable-plugins <plugins>', `Comma-separated plugin list`, list, []).
+  option('--screenshot', `Save page screenshot`, getConfigVal('screenshot', false)).
   name('site-audit-seo').
   version(packageJson.version).
-  usage('-u https://example.com --upload')
+  usage('-u https://example.com')
 
 program.getOptions = () => {
   const opts = {
@@ -248,21 +255,22 @@ program.getOptions = () => {
     outName: program.outName,                   // имя файла
     color: program.color,                       // раскрашивать консоль
     lang: program.lang,                         // язык
-    openFile: program.openFile,                 // открыть файл после сканирования
     fields: program.fields,                     // дополнительные поля, --fields 'title=$("title").text()'
     defaultFilter: program.defaultFilter,       //
-    removeCsv: program.removeCsv,               // удалять csv после генерации xlsx
+    removeCsv: program.removeCsv,               // удалять csv после генерации
     removeJson: program.removeJson,             // удалять json после поднятия сервера
-    xlsx: program.xlsx,                         // сохранять в XLSX
-    gdrive: program.gdrive,                     // публиковать на google docs
     json: program.json,                         // сохранять json файл
     upload: program.upload,                     // выгружать json на сервер
     consoleValidate: program.consoleValidate,   // выводить данные валидации в консоль
     obeyRobotsTxt: !program.ignoreRobotsTxt,    // chrome-crawler, не учитывать блокировки в robots.txt
     influxdb: program.influxdb,                 // конфиг influxdb
+    screenshot: program.screenshot,             // делать ли скриншот
+    removeSelectors: program.removeSelectors,   // удалить селекторы перед скриншотом
     urls: program.urls,                         // адреса для одиночного сканирования
     disablePlugins: program.disablePlugins,
-    extraHeaders: program.extraHeaders
+    extraHeaders: program.extraHeaders,
+    timeout: program.timeout,                   // таймаут запроса одной страницы
+    partialReport: program.partialReport,
   };
   return opts;
 }
@@ -272,7 +280,7 @@ program.outBrief = (options) => {
     {
       name: 'Preset',
       value: program.preset,
-      comment: '--preset [minimal, seo, headers, parse, lighthouse, lighthouse-all]',
+      comment: '--preset [minimal, seo, seo-minimal, headers, parse, lighthouse, lighthouse-all]',
     },
     {
       name: 'Threads',
@@ -280,7 +288,8 @@ program.outBrief = (options) => {
       comment: '-c threads' +
         (program.concurrency > 1 && program.lighthouse ?
           `, ${color.yellow}recommended to set -c 1 when using lighthouse${color.reset}`
-          : ''),
+          : '') +
+        (config.maxConcurrency ? `, server max: ${config.maxConcurrency}` : ''),
     },
     {
       name: 'Lighthouse',
@@ -296,6 +305,11 @@ program.outBrief = (options) => {
       name: 'Extra Headers',
       value: program.delay,
       comment: '--extra-headers {"X-Header-Name":"Header Value"}',
+    },
+    {
+      name: 'Timeout',
+      value: program.timeout,
+      comment: '--timeout ms',
     },
     {
       name: 'Ignore robots.txt',
@@ -315,19 +329,57 @@ program.outBrief = (options) => {
     {
       name: 'Max requests',
       value: program.maxRequests ? program.maxRequests : 'unlimited',
-      comment: '-m 123',
+      comment: '-m 123' + (config.maxRequests ? `, server max: ${config.maxRequests}` : ''),
     },
     {
       name: 'Language',
       value: program.lang,
       comment: '--lang [en, fr, de, ru]',
     },
-    {
+    /*{
       name: 'Docs extensions',
       value: program.docsExtensions.join(','),
       comment: '--docs-extensions zip,rar',
-    },
+    },*/
   ];
+
+  if (options.screenshot) {
+    brief = [...brief, ...[
+      {
+        name: 'Screenshot',
+        value: (program.screenshot ? 'yes' : 'no'),
+        comment: (program.screenshot ? '' : '--screenshot')
+      },
+      {
+        name: 'Remove selectors',
+        value: (program.removeSelectors ? program.removeSelectors : 'no'),
+        comment: (program.removeSelectors ? '' : '--remove-selectors .banner')
+      },
+    ]]
+  }
+
+  const fieldsArg = Object.entries(fieldsCustom).map(([key, value]) => `${key} (${value})`).join(', ');
+  if (fieldsArg) {
+    brief = [...brief, ...[
+      {
+        name: 'Fields',
+        // join fieldsCustom object to string "key (value), key (value)"
+        value: fieldsArg,
+        //value: fieldsCustom.map((f, name) => `${name} (${f})`),
+        comment: '',
+      },
+    ]]
+  }
+
+  if (options.partialReport) {
+    brief = [...brief, ...[
+      {
+        name: 'Previous report',
+        value: options.partialReport,
+        comment: '--partial-report data/report/...json',
+      },
+    ]];
+  }
 
   if (options.influxdb) {
     brief = [...brief, ...[
@@ -346,11 +398,6 @@ program.outBrief = (options) => {
         name: 'Headless',
         value: (program.headless ? 'yes' : 'no'),
         comment: (program.headless ? '--no-headless' : ''),
-      },
-      {
-        name: 'Save as XLSX',
-        value: (program.xlsx ? 'yes' : 'no'),
-        comment: (!program.xlsx ? '--xlsx' : ''),
       },
       {
         name: 'Save as JSON',

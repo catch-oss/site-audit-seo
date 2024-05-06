@@ -1,20 +1,20 @@
 [![npm](https://img.shields.io/npm/v/site-audit-seo)](https://www.npmjs.com/package/site-audit-seo) [![npm](https://img.shields.io/npm/dt/site-audit-seo)](https://www.npmjs.com/package/site-audit-seo)
 
-Web service and CLI tool for SEO site audit: crawl site, lighthouse all pages, view public reports in browser. Also output to console, json, csv, xlsx, Google Drive.
+Web service and CLI tool for SEO site audit: crawl site, lighthouse all pages, view public reports in browser. Also output to console, json, csv.
 
-Web view report - [site-audit-seo-viewer](https://viasite.github.io/site-audit-seo-viewer/).
+Web view report - [json-viewer](https://json-viewer.popstas.pro/).
 
 Demo:
-- [Default report](https://viasite.github.io/site-audit-seo-viewer/?url=https://site-audit.viasite.ru/reports/blog.popstas.ru-default.json)
-- [Lighthouse report](https://viasite.github.io/site-audit-seo-viewer/?url=https://site-audit.viasite.ru/reports/blog.popstas.ru-lighthouse.json)
-- [Default + Basic Lighthouse report](https://viasite.github.io/site-audit-seo-viewer/?url=https://site-audit.viasite.ru/reports/blog.popstas.ru-default-plus-lighthouse.json)
+- [Default report](https://json-viewer.popstas.pro/?url=https://site-audit.viasite.ru/reports/blog.popstas.ru-default.json)
+- [Lighthouse report](https://json-viewer.popstas.pro/?url=https://site-audit.viasite.ru/reports/blog.popstas.ru-lighthouse.json)
+- [Default + Basic Lighthouse report](https://json-viewer.popstas.pro/?url=https://site-audit.viasite.ru/reports/blog.popstas.ru-default-plus-lighthouse.json)
 
 Русское описание [ниже](#русский)
 
 ![site-audit-demo](assets/site-audit-demo.gif)
 
 ## Using without install
-Open https://viasite.github.io/site-audit-seo-viewer/.
+Open https://json-viewer.popstas.pro/. Public server allow to scan up to 100 pages at once.
 
 ## Features:
 - Crawls the entire site, collects links to pages and documents
@@ -31,14 +31,6 @@ Open https://viasite.github.io/site-audit-seo-viewer/.
 - Does not load images, css, js (configurable)
 - Each site is saved to a file with a domain name in `~/site-audit-seo/`
 - Some URLs are ignored ([`preRequest` in `src/scrap-site.js`](src/scrap-site.js#L98))
-
-### XLSX features
-- The first row and the first column are fixed
-- Column width and auto cell height are configured for easy viewing
-- URL, title, description and some other fields are limited in width
-- Title is right-aligned to reveal the common part
-- Validation of some columns (status, request time, description length)
-- Export xlsx to Google Drive and print URL
 
 ### Web viewer features:
 - Fixed table header and url column
@@ -64,6 +56,8 @@ Open https://viasite.github.io/site-audit-seo-viewer/.
 - depth
 - status
 - request_time
+- redirects
+- redirected_from
 - title
 - h1
 - page_date
@@ -88,6 +82,7 @@ Open https://viasite.github.io/site-audit-seo-viewer/.
 - text_ratio_percent
 - dom_size
 - html_size
+- html_size_rendered
 - lighthouse_scores_performance
 - lighthouse_scores_pwa
 - lighthouse_scores_accessibility
@@ -104,14 +99,19 @@ Open https://viasite.github.io/site-audit-seo-viewer/.
 
 ## Install
 
-## Install with docker-compose
-``` bash
-git clone https://github.com/viasite/site-audit-seo
-cd site-audit-seo
-git clone https://github.com/viasite/site-audit-seo-viewer data/front
-docker-compose pull # for skip build step
-docker-compose up -d
+## Zero-knowledge install
+Requires Docker.
+
+### Windows: download and run `install-run.bat`.
+Script will clone repository to `%LocalAppData%\Programs\site-audit-seo` and run service on http://localhost:5302.
+
+
+### Linux/MacOS:
 ```
+curl https://raw.githubusercontent.com/viasite/site-audit-seo/master/install-run.sh | bash
+```
+
+Script will clone repository to `$HOME/.local/share/programs/site-audit-seo` and run service on http://localhost:5302.
 
 Service will available on http://localhost:5302
 
@@ -121,7 +121,6 @@ Service will available on http://localhost:5302
 - Yake: `5303`
 
 You can change it in `.env` file or in `docker-compose.yml`.
-
 
 ## Install with NPM:
 ``` bash
@@ -140,43 +139,65 @@ Run this (replace `$USER` to your username or run from your user, not from `root
 sudo chown -R $USER:$USER "$(npm prefix -g)/lib/node_modules/site-audit-seo/node_modules/puppeteer/.local-chromium/"
 ```
 
+## Install developer instanse with docker-compose
+``` bash
+git clone https://github.com/viasite/site-audit-seo
+cd site-audit-seo
+git clone https://github.com/viasite/site-audit-seo-viewer data/front
+docker-compose pull # for skip build step
+docker-compose up -d
+```
+
 Error details [Invalid file descriptor to ICU data received](https://github.com/puppeteer/puppeteer/issues/2519).
 
 ## Command line usage:
 ```
 $ site-audit-seo --help
-Usage: site-audit-seo -u https://example.com --upload
+Usage: site-audit-seo -u https://example.com
 
 Options:
-  -u --urls <urls>             Comma separated url list for scan
-  -p, --preset <preset>        Table preset (minimal, seo, headers, parse, lighthouse, lighthouse-all) (default: "seo")
-  -e, --exclude <fields>       Comma separated fields to exclude from results
-  -d, --max-depth <depth>      Max scan depth (default: 10)
-  -c, --concurrency <threads>  Threads number (default: by cpu cores)
-  --lighthouse                 Appends base Lighthouse fields to preset
-  --delay <ms>                 Delay between requests (default: 0)
-  -f, --fields <json>          Field in format --field 'title=$("title").text()' (default: [])
-  --no-skip-static             Scan static files
-  --no-limit-domain            Scan not only current domain
-  --docs-extensions            Comma-separated extensions that will be add to table (default: doc,docx,xls,xlsx,ppt,pptx,pdf,rar,zip)
-  --follow-xml-sitemap         Follow sitemap.xml (default: false)
-  --ignore-robots-txt          Ignore disallowed in robots.txt (default: false)
-  -m, --max-requests <num>     Limit max pages scan (default: 0)
-  --no-headless                Show browser GUI while scan
-  --no-remove-csv              No delete csv after xlsx generate
-  --out-dir <dir>              Output directory (default: ".")
-  --csv <path>                 Skip scan, only convert csv to xlsx
-  --xlsx                       Save as XLSX (default: false)
-  --gdrive                     Publish sheet to google docs (default: false)
-  --json                       Output results in JSON (default: false)
-  --upload                     Upload JSON to public web (default: false)
-  --no-color                   No console colors
-  --lang <lang>                Language (en, ru, default: system language)
-  --open-file                  Open file after scan (default: yes on Windows and MacOS)
-  --no-open-file               Don't open file after scan
-  --no-console-validate        Don't output validate messages in console
-  -V, --version                output the version number
-  -h, --help                   display help for command
+  -u --urls <urls>                  Comma separated url list for scan
+  -p, --preset <preset>             Table preset (minimal, seo, seo-minimal, headers, parse, lighthouse,
+                                    lighthouse-all) (default: "seo")
+  -t, --timeout <timeout>           Timeout for page request, in ms (default: 10000)
+  -e, --exclude <fields>            Comma separated fields to exclude from results
+  -d, --max-depth <depth>           Max scan depth (default: 10)
+  -c, --concurrency <threads>       Threads number (default: by cpu cores)
+  --lighthouse                      Appends base Lighthouse fields to preset
+  --delay <ms>                      Delay between requests (default: 0)
+  -f, --fields <json>               Field in format --field 'title=$("title").text()' (default: [])
+  --default-filter <defaultFilter>  Default filter when JSON viewed, example: depth>1
+  --no-skip-static                  Scan static files
+  --no-limit-domain                 Scan not only current domain
+  --docs-extensions <ext>           Comma-separated extensions that will be add to table (default:
+                                    doc,docx,xls,xlsx,ppt,pptx,pdf,rar,zip)
+  --follow-xml-sitemap              Follow sitemap.xml (default: false)
+  --ignore-robots-txt               Ignore disallowed in robots.txt (default: false)
+  --url-list                        assume that --url contains url list, will set -d 1 --no-limit-domain
+                                    --ignore-robots-txt (default: false)
+  --remove-selectors <selectors>    CSS selectors for remove before screenshot, comma separated (default:
+                                    ".matter-after,#matter-1,[data-slug]")
+  -m, --max-requests <num>          Limit max pages scan (default: 0)
+  --influxdb-max-send <num>         Limit send to InfluxDB (default: 5)
+  --no-headless                     Show browser GUI while scan
+  --remove-csv                      Delete csv after json generate (default: true)
+  --remove-json                     Delete json after serve (default: true)
+  --no-remove-csv                   No delete csv after generate
+  --no-remove-json                  No delete json after serve
+  --out-dir <dir>                   Output directory (default: "~/site-audit-seo/")
+  --out-name <name>                 Output file name, default: domain
+  --csv <path>                      Skip scan, only convert existing csv to json
+  --json                            Save as JSON (default: true)
+  --no-json                         No save as JSON
+  --upload                          Upload JSON to public web (default: false)
+  --no-color                        No console colors
+  --partial-report <partialReport>
+  --lang <lang>                     Language (en, ru, default: system language)
+  --no-console-validate             Don't output validate messages in console
+  --disable-plugins <plugins>       Comma-separated plugin list (default: [])
+  --screenshot                      Save page screenshot (default: false)
+  -V, --version                     output the version number
+  -h, --help                        display help for command
 ```
 
 
@@ -186,6 +207,7 @@ Options:
 ### Linux/Mac:
 ``` bash
 site-audit-seo -d 1 -u https://example -f 'title=$("title").text()' -f 'h1=$("h1").text()'
+site-audit-seo -d 1 -u https://example -f noindex=$('meta[content="noindex,%20nofollow"]').length
 ```
 
 ### Windows:
@@ -266,7 +288,6 @@ Based on [headless-chrome-crawler](https://github.com/yujiosaka/headless-chrome-
 1. Sometimes it writes identical pages to csv. This happens in 2 cases:
 1.1. Redirect from another page to this (solved by setting `skipRequestedRedirect: true`, hardcoded).
 1.2. Simultaneous request of the same page in parallel threads.
-2. Sometimes a number appears instead of the URL, it occurs at the stage of converting csv to xlsx, don't know why.
 
 
 ## Free audit tools alternatives
@@ -290,7 +311,7 @@ Based on [headless-chrome-crawler](https://github.com/yujiosaka/headless-chrome-
 - [Gerapy](https://github.com/Gerapy/Gerapy) - distributed Crawler Management Framework Based on Scrapy, Scrapyd, Django and Vue.js
 
 ## Русский
-Сканирование одного или несколько сайтов в файлы csv и xlsx.
+Сканирование одного или несколько сайтов в json файл с веб-интерфейсом.
 
 ## Особенности:
 - Обходит весь сайт, собирает ссылки на страницы и документы
@@ -303,14 +324,6 @@ Based on [headless-chrome-crawler](https://github.com/yujiosaka/headless-chrome-
 - Некоторые URL игнорируются ([`preRequest` в `src/scrap-site.js`](src/scrap-site.js#L112))
 - Можно прогнать каждую страницу по Lighthouse (см. ниже)
 - Сканирование произвольного списка URL, `--url-list`
-
-### Особенности XLSX:
-- Первый ряд и первая колонка закрепляются
-- Ширина колонок и автоматическая высота ячеек настроены для удобного просмотра
-- URL, title, description и некоторые другие поля ограничены по ширине
-- Title выравнивается по правому краю для выявления общей части
-- Валидация некоторых колонок (status, request time, description length)
-- Загрузка xlsx на Google Drive и вывод ссылки
 
 ## Установка:
 ``` bash
@@ -336,7 +349,7 @@ sudo chown -R $USER:$USER "$(npm prefix -g)/lib/node_modules/site-audit-seo/node
 
 ## Использование
 ```
-site-audit-seo -u https://example.com --upload
+site-audit-seo -u https://example.com
 ```
 
 
@@ -368,7 +381,6 @@ site-audit-seo -u https://example.com --lighthouse
 1. Иногда пишет в csv одинаковые страницы. Это бывает в 2 случаях:
 1.1. Редирект с другой страницы на эту (решается установкой `skipRequestedRedirect: true`, сделано).
 1.2. Одновременный запрос одной и той же страницы в параллельных потоках.
-2. Иногда вместо URL появляется цифра, происходит на этапе конвертации csv в xlsx, не знаю почему.
 
 
 ## TODO:
@@ -383,3 +395,4 @@ site-audit-seo -u https://example.com --lighthouse
 - joeyguerra/schema.js - https://gist.github.com/joeyguerra/7740007
 - smhg/microdata-js - https://github.com/smhg/microdata-js
 - indicate page scan error
+- Find broken encoding like `СЂРµРіРёРѕРЅР°Р»СЊРЅРѕРіРѕ`

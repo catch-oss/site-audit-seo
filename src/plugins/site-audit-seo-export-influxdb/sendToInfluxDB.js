@@ -1,10 +1,7 @@
-import {createRequire} from 'module';
-const require = createRequire(import.meta.url);
-
-const fs = require('fs');
-const os = require('os');
-const url = require('url');
-const Influx = require('influx');
+import fs from 'fs';
+import os from 'os';
+import url from 'url';
+import Influx from 'influx';
 
 function init(options) {
   const influx = new Influx.InfluxDB({
@@ -58,7 +55,8 @@ function buildSchemaByFields(fields, measurement) {
   return schema;
 }
 
-module.exports = async (jsonPath, options) => {
+async function sendToInfluxDB (jsonPath, options) {
+  // console.log("options.influxdb:", options.influxdb);
   if (options.influxdb && options.fieldsPreset == 'seo') {
     options.log('send to InfluxDB...');
   } else {
@@ -95,3 +93,5 @@ module.exports = async (jsonPath, options) => {
   options.log(`sent ${points.length} points`);
   return points;
 };
+
+export default sendToInfluxDB;

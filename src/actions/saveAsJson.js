@@ -1,27 +1,23 @@
-import {createRequire} from 'module';
-const require = createRequire(import.meta.url);
-
-import fieldPresets from '../presets/fields.js';
+import fs from 'fs';
+import csv from 'csvtojson';
+import { fields } from '../presets/fields.js';
 import filters from '../presets/filters.js';
 import columns from '../presets/columns.js';
-
-// not sure why this is necessary
-const fields = fieldPresets.fields;
-
-const fs = require('fs');
-const csv = require('csvtojson');
+import path from "path";
+import {fileURLToPath} from "url";
 
 const defaultField = 'url';
 
-// return json object
-// TODO: too much arguments
-export default async (csvPath, jsonPath, lang, preset, defaultFilter, url, args, scanTime) => {
+export default async ({csvPath, jsonPath, lang, preset, defaultFilter, url, args, scanTime, itemsPartial = [], partNum = 0, startTime = 0}) => {
   // read csv to workbook
   const data = {};
 
   // items
   data.items = await csv({delimiter: ';'}).fromFile(csvPath);
   data.items = flattenItems(data.items);
+  if (itemsPartial.length > 0) {
+    data.items = [...itemsPartial, ...data.items];
+  }
 
   // fields
   data.fields = buildFields(fields, data.items, lang);
@@ -43,18 +39,66 @@ export default async (csvPath, jsonPath, lang, preset, defaultFilter, url, args,
   // columns
   data.columns = buildColumns(columns, preset);
 
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const packageJsonPath = path.join(__dirname, '..', '..', 'package.json');
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
+
   data.scan = {
     url: url,
     args: args,
-    version: require('../../package.json').version,
+    startTime: startTime,
+    version: packageJson.version,
     time: scanTime,
+    partNum: partNum,
   }
+
+  // filter empty redirected items
+  // console.log("data.items before filter:", data.items.length);
+  data.items = filterItems(data.items);
 
   // write
   const raw = JSON.stringify(data);
   fs.writeFileSync(jsonPath, raw);
+
+  const msg = `Saved ${data.items.length} items` + (itemsPartial.length > 0 ? `, including ${itemsPartial.length} previous items` : '');
+  console.log(msg);
+
   return data;
-};
+}
+
+function filterItems(items) {
+  return items.filter((item, i, self) => {
+    const hasBetter = self.filter((item2, i2) => {
+      if (item2.redirected_from === item.url) {
+        // console.log("i2 excluded 1:", i2);
+        return true;
+      }
+
+      if (i > i2) return false; // exclude previous items
+      if (i === i2) return false; // exclude self
+      if (item2.url === item.url) {
+        // console.log("i2 is better 2:", i2);
+        // console.log("i excluded 2:", i);
+        return true;
+      }
+    });
+    /*if (hasBetter.length > 0) {
+      console.log(`${i} has better:`, hasBetter);
+    }*/
+
+    return hasBetter.length === 0;
+    // return last element of hasBetter
+    /*if (hasBetter.length === 0) {
+      return true;
+    } else {
+      const isNotEmpty = data.items.some(i => {
+        return i.redirected_from === item.url
+          || (i.status && i.url === item.url)
+      });
+      return !isNotEmpty;
+    }*/
+  });
+}
 
 function flattenItems(items) {
   // flatten items

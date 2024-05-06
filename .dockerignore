@@ -7,7 +7,8 @@ Dockerfile*
 .git/*
 .git/**
 node_modules
-node_modules/
-node_modules/*
-node_modules/**
 data/
+/config.js
+/undefined*
+/cloud-functions
+/assets/site-audit-demo.gif

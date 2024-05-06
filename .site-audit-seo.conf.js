@@ -9,11 +9,10 @@ module.exports = {
   // removeCsv: true,
   // removeJson: true,
   // outDir: '~/site-audit-seo/.',
-  // gdrive: false,
   // json: false,
-  // xlsx: false,
   // upload: false,
   // lang: 'ru',
-  // openFile: true,
   // docsExtensions: ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'pdf', 'rar', 'zip']
+  // uploadOrigin: 'https://site-audit.viasite.ru',
+  // viewerOrigin: 'https://site-audit.viasite.ru',
 };
