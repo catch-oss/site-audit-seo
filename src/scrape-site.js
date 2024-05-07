@@ -63,7 +63,7 @@ function socketSend(socket, event, msg) {
   }
 }
 
-async function scrapeSite ({baseUrl, options = {}}) {
+async function scrapeSite (baseUrl, options = {}) {
   const domain = url.parse(baseUrl).hostname || baseUrl;
   const protocol = url.parse(baseUrl).protocol;
 
@@ -413,7 +413,8 @@ async function scrapeSite ({baseUrl, options = {}}) {
 
       // это событие срабатывает, когда chrome подгружает статику на странице (и саму страницу)
       page.on('request', request => {
-        //console.log('request.url(): ', request.url());
+
+        console.log('request URL:', request.url());
 
         // check for mixed content, thanks to https://github.com/busterc/mixed-content-crawler/
         if (protocol === 'https:' &&
@@ -486,6 +487,8 @@ async function scrapeSite ({baseUrl, options = {}}) {
       // count html size before render scripts
       let pageSize = 0;
       page.on('response', response => {
+        console.log('RESPONSE', response.status(), response.url());
+        if (response.status() !== 200) return;
         if (response.url() !== crawler._options.url) return;
         response.buffer().then(buffer => {
           pageSize += buffer.length
@@ -546,7 +549,7 @@ async function scrapeSite ({baseUrl, options = {}}) {
       let result = {};
       try {
         result = await crawl();
-        // console.log("after crawl(), result.response.status: ", result?.response?.status);
+        console.log("after crawl(), result.response.status: ", result?.response?.status);
 
         if (!result.result) result.result = {};
         result.result.x_cache = 0;
@@ -849,9 +852,11 @@ async function scrapeSite ({baseUrl, options = {}}) {
   }
 
   try {
+    crawlerOptions.skipRequestedRedirect = false;
+    console.log('HCCrawler OPTIONS:', crawlerOptions);
     crawler = await HCCrawler.launch(crawlerOptions);
   } catch (e) {
-    console.log(e);
+    console.log('HCCrawler ERROR:', e);
   }
 
 
@@ -905,7 +910,7 @@ async function scrapeSite ({baseUrl, options = {}}) {
               };
 
               // console.log("newOptions:", newOptions);
-              scrapSite({baseUrl: baseUrl, options: newOptions});
+              scrapeSite({baseUrl: baseUrl, options: newOptions});
             }, seconds * 1000);
           } catch (e) {
             console.log(e);
@@ -965,6 +970,9 @@ async function scrapeSite ({baseUrl, options = {}}) {
     }
   });
   crawler.on('requestfailed', error => {
+
+    console.log('requestfailed:', error);
+
     if (crawler._browser._connection._closed) {
       // log("Browser connection closed (requestfailed)");
       return;
@@ -977,6 +985,9 @@ async function scrapeSite ({baseUrl, options = {}}) {
       // possible URIError: URI malformed
       console.error(e);
     }
+  });
+  crawler.on('request', options => {
+    log(`requesting: ${decodeURI(options.url)}`);
   });
   crawler.on('requestdisallowed', options => {
     log(`Disallowed in robots.txt: ${decodeURI(options.url)}`, options.socket);
@@ -1112,5 +1123,5 @@ async function scrapeSite ({baseUrl, options = {}}) {
   return await tryFinish(finishTries);
 }
 
-// export default {scrapSite};
-export default scrapSite;
+// export default {scrapeSite};
+export default scrapeSite;
