@@ -27,7 +27,7 @@ export default async (jsonPath, webPath = false) => {
   });
 
   function onlineViewLink(url) {
-    return `https://viasite.github.io/site-audit-seo-viewer/?url=${url}`;
+    return `https://json-viewer.popstas.pro/?url=${url}`;
   }
 
   function outLinks(url) {
