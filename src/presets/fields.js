@@ -528,4 +528,4 @@ for (let plugin of plugins) {
   }
 }
 
-export default { fields, getFieldByName };
+export { fields, getFieldByName };

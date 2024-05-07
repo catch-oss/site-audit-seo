@@ -4,7 +4,7 @@ import { fields } from '../presets/fields.js';
 import filters from '../presets/filters.js';
 import columns from '../presets/columns.js';
 import path from "path";
-import {fileURLToPath} from "url";
+import { fileURLToPath } from "url";
 
 const defaultField = 'url';
 
