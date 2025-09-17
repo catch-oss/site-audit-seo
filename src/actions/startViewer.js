@@ -1,8 +1,6 @@
-import {createRequire} from 'module';
-const require = createRequire(import.meta.url);
-
-const fs = require('fs');
-const express = require('express');
+import fs from 'fs';
+import express from 'express';
+import config from '../config.js'
 
 export default async (jsonPath, webPath = false) => {
   const app = express();
@@ -11,6 +9,8 @@ export default async (jsonPath, webPath = false) => {
   const jsonUrl = webPath || `http://localhost:${port}/data.json`;
   const jsonRaw = fs.readFileSync(jsonPath);
 
+  const viewerOrigin = config.viewerOrigin || 'https://json-viewer.popstas.pro';
+  // const uploadOrigin = config.uploadOrigin || 'https://site-audit.viasite.ru';
   app.get('/', function(req, res, next) {
     res.redirect(302, onlineViewLink(jsonUrl));
   });
@@ -27,16 +27,17 @@ export default async (jsonPath, webPath = false) => {
   });
 
   function onlineViewLink(url) {
-    return `https://viasite.github.io/site-audit-seo-viewer/?url=${url}`;
+    const origin = config.viewerOrigin || 'https://json-viewer.popstas.pro';
+    return `${origin}/?url=${url}`;
   }
 
   function outLinks(url) {
-    console.log(`JSON file: ${url}`);
+    // console.log(`JSON file: ${url}`);
+    // console.log('');
+    // console.log(`Dev viewer: http://localhost:3000/?url=${url}`);
+    // console.log(`Short link: ${viewerOrigin}/?url=${url}`);
     console.log('');
-    console.log(`Dev viewer: http://localhost:3000/?url=${url}`);
-    console.log(`Short link: https://site-audit.viasite.ru/?report=` + url.replace('https://site-audit.viasite.ru/reports/', '').replace('.json', ''));
-    console.log('');
-    console.log(`Online viewer: ${onlineViewLink(url)}`);
+    console.log(`Report link: ${onlineViewLink(url)}`);
     //console.log(`Public viewer: ${onlineViewLink(url.replace(`http://localhost:${port}`, 'https://3001.home.popstas.ru'))}`);
     console.log('');
   }

@@ -1,6 +1,3 @@
-import {createRequire} from 'module';
-const require = createRequire(import.meta.url);
-
 import registry from '../registry.js';
 import fieldsLighthouse from './fields-lighthouse.js';
 import fieldsLighthouseEn from './fields-lighthouse-en.js';
@@ -10,6 +7,18 @@ const fields = [
     name: 'url',
     comment: 'URL',
     groups: ['info'],
+    filterType: 'string',
+  },
+  {
+    name: 'error',
+    comment: 'Error',
+    groups: ['info'],
+  },
+  {
+    name: 'screenshot',
+    comment: 'Screenshot',
+    groups: ['info'],
+    type: 'image',
   },
   {
     name: 'mixed_content_url',
@@ -61,12 +70,28 @@ const fields = [
     comment: 'Код ответа страницы',
     comment_en: 'HTTP answer code',
     validate: {
-      error: '!= 200',
+      // warning: '== 0',
+      warning: '< 1',
+      error: '> 400',
     },
     stat: {
       type: 'enum',
     },
     groups: ['info'],
+    type: 'integer',
+    filterType: 'enum',
+  },
+  {
+    name: 'x_cache',
+    comment: 'X-Cache',
+    comment_en: 'X-Cache',
+    validate: {
+      warning: '< 1',
+    },
+    stat: {
+      type: 'enum',
+    },
+    groups: ['perf'],
     type: 'integer',
     filterType: 'enum',
   },
@@ -83,6 +108,28 @@ const fields = [
       ranges: ['< 100', '100-499', '500-999', '1000-2000', '> 2000']
     },
     groups: ['perf'],
+    type: 'integer',
+  },
+  {
+    name: 'redirected_from',
+    comment: 'Начальный URL страницы (если был редирект)',
+    comment_en: 'Redirected from',
+    groups: ['info'],
+    type: 'string',
+  },
+  {
+    name: 'redirects',
+    comment: 'Кол-во редиректов',
+    comment_en: 'Redirects count',
+    validate: {
+      warning: '> 0',
+      error: '> 1',
+    },
+    stat: {
+      type: 'enum',
+    },
+    filterType: 'enum',
+    groups: ['info'],
     type: 'integer',
   },
   {
@@ -299,11 +346,27 @@ const fields = [
   },
   {
     name: 'html_size',
-    comment: 'Размер HTML, байт',
-    comment_en: 'HTML size, bytes',
+    comment: 'Размер HTML скачанный, байт',
+    comment_en: 'HTML size, downloaded, bytes',
     validate: {
       warning: '> 500000',
       error: '> 1000000',
+    },
+    stat: {
+      type: 'ranges',
+      ranges: ['< 100000', '100000-500000', '> 500000']
+    },
+    groups: ['perf'],
+    type: 'integer',
+  },
+
+  {
+    name: 'html_size_rendered',
+    comment: 'Размер HTML в браузере, байт',
+    comment_en: 'HTML size, rendered, bytes',
+    validate: {
+      warning: '> 200000',
+      error: '> 500000',
     },
     stat: {
       type: 'ranges',
@@ -452,7 +515,7 @@ for (let lhf of fieldsLighthouse) {
 // plugins fields
 const plugins = registry.getPlugins();
 for (let plugin of plugins) {
-  if (plugin.fields) for(let field of plugin.fields) {
+  if (plugin.fields) for (let field of plugin.fields) {
     if (typeof field === 'string') {
       fields.push({
         name: field,
@@ -465,4 +528,4 @@ for (let plugin of plugins) {
   }
 }
 
-export default { fields, getFieldByName };
+export { fields, getFieldByName };

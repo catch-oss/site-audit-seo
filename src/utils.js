@@ -1,12 +1,13 @@
-import {createRequire} from 'module';
-const require = createRequire(import.meta.url);
+import fs from 'fs';
+import path from 'path';
+import sanitize from 'sanitize-filename';
 
-const fs = require('fs');
-const path = require('path');
+const defaultLocalDir = 'data/reports/';
 
-export const getJsonName = (jsonPath, short = false) => {
+export const getJsonName = (jsonPath, short = false, timestamp) => {
   const offset = new Date().getTimezoneOffset() * 60000;
-  const dateLocal = new Date(Date.now() - offset)
+  const ts = timestamp || Date.now();
+  const dateLocal = new Date(ts - offset);
   let date = dateLocal.toISOString().
     replace(/:/g, '-').
     replace('T', '__').
@@ -24,4 +25,21 @@ export const initDataDir = (dataDir) => {
     console.log(`Create empty package.json in ${dataDir}`);
     fs.copyFileSync('./package-data.json', packageJson);
   }
+}
+
+export const getUserDir = (uid = '', localDir = defaultLocalDir) => {
+  // user subdir if uid
+  if (uid) {
+    const userDir = sanitize(uid.slice(0, 5));
+    localDir += userDir;
+    if (!fs.existsSync(localDir)) fs.mkdirSync(localDir);
+  }
+
+  return localDir;
+}
+
+export default {
+  getJsonName,
+  initDataDir,
+  getUserDir,
 }

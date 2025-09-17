@@ -1,46 +1,66 @@
-import {createRequire} from 'module';
-const require = createRequire(import.meta.url);
+import path from 'path';
+import { JSONFilePreset } from 'lowdb/node'
 
-const path = require('path');
-const lowdb = require('lowdb');
-const FileSync = require('lowdb/adapters/FileSync');
-
-import pjson from '../package.json';
-import scrapSite from "./scrap-site.js";
+import scrapSite from "./scrape-site.js";
+// import { scrapSite } from "./scrap-site";
 import registry from "./registry.js";
 import utils from "./utils.js";
 
-const queue = require("queue");
-const express = require("express");
+import queue from "queue";
+import express from "express";
 const app = express();
-const bodyParser = require("body-parser");
-const http = require("http").createServer(app);
+// import cors from 'cors';
+// app.use(cors());
+import bodyParser from "body-parser";
+import http from "http";
+import os from "os";
+const server = http.createServer(app);
+import config from "./config.js";
+import { Server } from "socket.io";
+import {fileURLToPath} from "url";
+import fs from "fs";
 
-const dataDir = process.env.DATA_DIR || 'data';
-utils.initDataDir(dataDir);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const packageJsonPath = path.join(__dirname, '..', 'package.json');
+const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
 
-initExpress(app);
-
-const io = require("socket.io")(http, {
+const io = new Server(server, {
   cors: {
     origin: "*",
-    methods: ["GET", "POST"],
     credentials: true,
+    // methods: ["GET", "POST"],
   },
   pingTimeout: 30000, // https://github.com/socketio/socket.io/issues/3025
 });
 
+const dataDir = process.env.DATA_DIR || 'data';
+utils.initDataDir(dataDir);
+
+process.uncaughtException = (error, source) => {
+  console.error('Uncaught Exception in server.js:', error);
+  console.error('Source:', source);
+};
+process.on('uncaughtException', process.uncaughtException);
+
+initExpress(app);
+
 // state
-const adapter = new FileSync(path.join(dataDir, 'db.json'));
-const db = lowdb(adapter);
-db.defaults({ state: {} }).write();
+// const adapter = new FileSync();
+const defaultData = { stats: []};
+const dbPath = path.join(dataDir, 'db.json');
+const db = await JSONFilePreset(dbPath, defaultData);
+// const db = new LowSync(new JSONFileSync(dbPath), defaultData);
+// db.defaults({ state: {} }).write();
 
 // add reboot
-const stats = db.get('stats').value() || {};
+const stats = db.data.stats;
 const reboots = stats.reboots ? stats.reboots + 1 : 1;
-db.set('stats.reboots', reboots).write();
+// db.set('stats.reboots', reboots).write();
+db.update(({stats}) => {
+  stats.reboots = reboots;
+});
 
-const maxConcurrency = 2;
+const maxConcurrency = 2; // TODO: rename to maxConcurrentScans
 let scansTotal = 0;
 let pagesTotal = 0;
 let connections = 0;
@@ -58,13 +78,16 @@ registry.load();
 
 async function onScan(url, args, socket) {
   log(`> site-audit-seo ` + (url ? `-u ${url} ` : '') + args, socket);
-  args = args.split(" ");
+  args = args.trim().split(" ").map(arg => {
+    return arg.replace(/%20/g, ' ');
+  });
   if (!url) {
     log("URL not defined!", socket);
     return;
   }
 
-  const program = require("./program");
+  const programImport = await import("./program.js");
+  const program = programImport.default;
 
   // repeat default, cross-scans global!
   // TODO: remove
@@ -73,6 +96,8 @@ async function onScan(url, args, socket) {
   delete(program.maxDepth);
   delete(program.concurrency);
   delete(program.lighthouse);
+  delete(program.screenshot);
+  program.removeSelectors = '.matter-after,#matter-1,[data-slug]'; // TODO: to config
 
   program.delay = 0;
   program.skipStatic = false;
@@ -88,19 +113,16 @@ async function onScan(url, args, socket) {
   program.color = true;
 
   delete(program.lang);
-  delete(program.openFile);
   program.fields = [];
   delete(program.defaultFilter);
   program.removeCsv = true;
   delete(program.removeJson);
-  delete(program.xlsx);
-  delete(program.gdrive);
   program.json = true;
   delete(program.upload);
   delete(program.consoleValidate);
   delete(program.influxdb);
   delete(program.urls);
-  program.disablePlugins = [];
+  program.disablePlugins = config.disablePlugins || [];
 
   program.exitOverride();
   try {
@@ -113,6 +135,9 @@ async function onScan(url, args, socket) {
   await program.postParse();
 
   const opts = program.getOptions();
+
+  // console.log("args:", [...["", ""], ...args]);
+  // console.log("opts:", opts);
   opts.args = args;
   opts.webService = true;
   opts.consoleValidate = false; // not needed
@@ -140,23 +165,22 @@ async function onScan(url, args, socket) {
       // log('ping', opts.socket, true);
     }, 5000);
 
-    const res = await scrapSite(url, opts);
+    const res = await scrapSite({baseUrl: url, options: opts});
 
     if (res && res.pages) {
       pagesTotal += res.pages;
 
       // update persistent state
-      const stats = db.get('stats').value() || {};
-      db.set('stats.pagesTotal', stats.pagesTotal ? stats.pagesTotal + res.pages : res.pages).write();
-      db.set('stats.scansTotal', stats.scansTotal ? stats.scansTotal + 1 : 1).write();
-      db.write();
+      db.update(({stats}) => {
+        stats.pagesTotal = stats.pagesTotal ? stats.pagesTotal + res.pages : res.pages;
+        stats.scansTotal = stats.scansTotal ? stats.scansTotal + 1 : 1;
+      });
     }
 
     clearInterval(pingInterval);
 
-    log(`Finish audit: ${url}`, socket, true);
     return res;
-  });
+  })
 }
 
 function initQueue() {
@@ -176,23 +200,24 @@ function initQueue() {
 function getKeyBySocketId(socketId) {
   for (let sid in sockets) {
     const s = sockets[sid];
-    if (s.opts && s.opts.socket && s.opts.socket.id == socketId) return sid;
+    if (s?.opts?.socket?.id === socketId || sid === socketId) return sid;
   }
 }
 
 function serverState() {
-  const stats = db.get('stats').value() || {};
+  const stats = db.data.stats;
+  // const stats = db.get('stats').value() || {};
 
   const socketsList = [];
 
+  // for debug
   for (let sid in sockets) {
     const s = sockets[sid];
-    const msg = s.opts && s.opts.socket && s.opts.socket.id != sid ? `${sid} => ${s.opts.socket.id}` : sid;
-    // const msg = `${sid} => ${sockets[sid].opts.socket.id}`;
+    const msg = s?.opts?.socket?.id !== sid ? `${sid} => ${s.socket.id}` : sid;
     socketsList.push(msg);
   }
 
-  return {
+  const conf = {
     running: q.length < maxConcurrency ? q.length : maxConcurrency,
     available: Math.max(0, maxConcurrency - q.length),
     pending: Math.max(0, q.length - maxConcurrency),
@@ -201,19 +226,31 @@ function serverState() {
     pagesTotal: pagesTotal,
     scansTotalAll: stats.scansTotal || 0,
     pagesTotalAll: stats.pagesTotal || 0,
+    serverLoadPercent: getServerLoadPercent(),
     uptime: Math.floor((Date.now() - startedTime) / 1000),
-    serverVersion: pjson.version,
+    serverVersion: packageJson.version,
     reboots: reboots,
+    featureScreenshot: config.featureScreenshot,
+    maxConcurrency: config.maxConcurrency,
+    maxRequests: config.maxRequests,
     // sockets: socketsList, // only for debug!
   }
+  if (config.onlyDomains) conf.onlyDomains = config.onlyDomains;
+  return conf;
 }
 
+function getServerLoadPercent() {
+  // return load average / number of CPUs
+  const cpus = os.cpus().length;
+  const load = os.loadavg()[0];
+  return Math.round(load / cpus * 100);
+}
 function sendStats(socket) {
   socketSend(socket, "serverState", serverState());
 }
 
 function onSocketConnection(socket) {
-  log("user connected to server", socket, true);
+  log(`user connected to server, connectionId: ${socket.id}`, socket, true);
   connections++;
   // console.log('socket.id: ', socket.id);
   sockets[socket.id] = { socket, opts: {} };
@@ -233,6 +270,7 @@ function onSocketConnection(socket) {
       !socket.uid || socket.uid.includes("anon")
         ? "anonymous user: " + auth.uid
         : "user authenticated: " + auth.email;
+    sendStats(socket);
     log(msg, socket, true);
 
     // restore last connection
@@ -263,7 +301,6 @@ function onSocketConnection(socket) {
     clearInterval(interval);
     connections--;
     log(`user disconnected: ${socket.id}`, socket, true);
-    // delete(sockets[socket.id]); // TODO: remove for restore connection
   });
 }
 
@@ -320,11 +357,11 @@ function initExpress(app) {
   app.use("/reports", express.static("data/reports"));
 
   app.get("/", async (req, res) => {
-    res.send(`site-audit-seo ${pjson.version} working`);
+    res.send(`site-audit-seo ${packageJson.version} working`);
   });
 
   const port = process.env.PORT || 5301;
-  http.listen(port, () => {
+  server.listen(port, () => {
     console.log(`Listening at http://localhost:${port}`);
   });
 }
