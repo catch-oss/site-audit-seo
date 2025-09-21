@@ -12,3 +12,5 @@ data/
 /undefined*
 /config.js
 .live-debug
+.claude/settings.local.json
+coverage/
