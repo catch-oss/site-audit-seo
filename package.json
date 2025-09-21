@@ -30,7 +30,6 @@
   "author": "Stanislav Popov",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@popstas/headless-chrome-crawler": "file:./packages/headless-chrome-crawler",
     "axios": "^1.6.8",
     "body-parser": "^1.19.0",
     "chrome-launcher": "^1.1.0",
