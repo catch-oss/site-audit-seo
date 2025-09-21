@@ -11,9 +11,9 @@
   "scripts": {
     "start": "node src/index.js",
     "server": "node src/server.js",
-    "test": "jest",
-    "test:coverage": "jest --coverage",
-    "test:watch": "jest --watch",
+    "test": "NODE_OPTIONS=\"--experimental-vm-modules\" jest",
+    "test:coverage": "NODE_OPTIONS=\"--experimental-vm-modules\" jest --coverage",
+    "test:watch": "NODE_OPTIONS=\"--experimental-vm-modules\" jest --watch",
     "version": "npm run changelog && git add CHANGELOG.md",
     "postversion": "git push && npm run release",
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s -r 0",
