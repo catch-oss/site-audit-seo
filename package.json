@@ -11,6 +11,9 @@
   "scripts": {
     "start": "node src/index.js",
     "server": "node src/server.js",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "test:watch": "jest --watch",
     "version": "npm run changelog && git add CHANGELOG.md",
     "postversion": "git push && npm run release",
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s -r 0",
@@ -23,7 +26,8 @@
     "site-audit-seo": "./src/index.js"
   },
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "cloud-functions"
   ],
   "author": "Stanislav Popov",
   "license": "AGPL-3.0-or-later",
@@ -43,6 +47,11 @@
     "queue": "^6.0.1",
     "sanitize-filename": "^1.6.3",
     "socket.io": "^4.7.4"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "@babel/core": "^7.23.0",
+    "@babel/preset-env": "^7.23.0"
   },
   "keywords": [
     "audit",
