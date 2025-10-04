@@ -1,6 +1,6 @@
 {
   "name": "site-audit-seo",
-  "version": "6.0.1",
+  "version": "6.1.0",
   "description": "Web service and CLI tool for SEO site audit: crawl site, lighthouse all pages, view public reports in browser. Also output to console, json, csv.",
   "main": "src/index.js",
   "type": "module",
@@ -30,8 +30,7 @@
   "author": "Stanislav Popov",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "headless-chrome-crawler": "./packages/headless-chrome-crawler",
-    "cloud-functions": "./cloud-functions",
+    "@popstas/headless-chrome-crawler": "https://github.com/catch-oss/headless-chrome-crawler#master",
     "axios": "^1.6.8",
     "body-parser": "^1.19.0",
     "chrome-launcher": "^1.1.0",
