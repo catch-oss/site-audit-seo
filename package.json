@@ -24,7 +24,6 @@
   },
   "bin": "./src/index.js",
   "workspaces": [
-    "packages/*",
     "cloud-functions"
   ],
   "author": "Stanislav Popov",
