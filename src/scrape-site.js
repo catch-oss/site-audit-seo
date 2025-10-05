@@ -10,8 +10,8 @@ import path from 'path';
 import {saveAsJson, copyJsonToReports, uploadJson, startViewer} from './actions/index.js';
 import {getUserDir} from './utils.js';
 import axios from 'axios';
-import HCCrawler from '../packages/headless-chrome-crawler/index.js';
-import CSVExporter from '../packages/headless-chrome-crawler/exporter/csv.js';
+import HCCrawler from '@popstas/headless-chrome-crawler/index.js';
+import CSVExporter from '@popstas/headless-chrome-crawler/exporter/csv.js';
 // console.log("pkg:", pkg);
 // const {CSVExporter} = pkg;
 import url from 'url';
@@ -21,6 +21,7 @@ import sanitize from "sanitize-filename";
 // поля описаны в API по ссылке выше
 import fieldsPresets from './presets/scraperFields.js';
 import color from './color.js';
+
 import registry from './registry.js';
 import config from './config.js';
 
@@ -62,6 +63,14 @@ function socketSend(socket, event, msg) {
     }
   }
 }
+
+const isCrawlerConnectionClosed = crawler => {
+  if (!crawler) return false;
+  const browser = crawler._browser;
+  if (!browser) return false;
+  const connection = browser._connection;
+  return Boolean(connection && connection._closed);
+};
 
 async function scrapeSite (baseUrl, options = {}) {
   const domain = url.parse(baseUrl).hostname || baseUrl;
@@ -840,7 +849,7 @@ async function scrapeSite (baseUrl, options = {}) {
       startTime,
       partNum: options.partNum,
     })
-    const { jsonName, localPath } = copyJsonToReports(jsonPath, options.socket?.uid, undefined, startTime, true);
+    const { jsonName, localPath } = copyJsonToReports(jsonPath, options.socket?.uid, options.outDir, startTime, true);
 
     // send result json to socket
     socketSend(options.socket, 'result', {name: jsonName, isProgress: true, count: items.length});
@@ -867,7 +876,7 @@ async function scrapeSite (baseUrl, options = {}) {
     // const failedEmulated10Percent = requestedCount > 10 && Math.random() < 0.1;
 
     // catch error after scan
-    if (crawler._browser._connection._closed /*|| failedEmulated10Percent*/) {
+    if (isCrawlerConnectionClosed(crawler) /*|| failedEmulated10Percent*/) {
       // log("Browser connection closed (requeststarted)");
       // 11.03.2021 12:22 fix: suppress headless-chrome-crawler exceptions after max requests reached
       // but if return it can cause infinite loop
@@ -973,7 +982,7 @@ async function scrapeSite (baseUrl, options = {}) {
 
     console.log('requestfailed:', error);
 
-    if (crawler._browser._connection._closed) {
+    if (isCrawlerConnectionClosed(crawler)) {
       // log("Browser connection closed (requestfailed)");
       return;
     }
@@ -998,7 +1007,7 @@ async function scrapeSite (baseUrl, options = {}) {
     if (options.maxDepth > 1) console.log(`${color.yellow}Max depth reached${color.reset}`);
   });
   crawler.on('maxrequestreached', () => {
-    if (crawler._browser._connection._closed) return; // catch error after scan
+    if (isCrawlerConnectionClosed(crawler)) return; // catch error after scan
     console.log(`\n${color.yellow}Max requests reached${color.reset}`);
     isMaxRequested = true;
     // console.log(`${color.yellow}Please, ignore this error:${color.reset}`);
@@ -1072,7 +1081,7 @@ async function scrapeSite (baseUrl, options = {}) {
       }
 
       if (options.webService) {
-        const { jsonName } = copyJsonToReports(jsonPath, options.socket.uid, undefined, options.partialFirstStartTime, true);
+        const { jsonName } = copyJsonToReports(jsonPath, options.socket.uid, options.outDir, options.partialFirstStartTime, true);
 
         // send result json to socket
         socketSend(options.socket, 'result', {name: jsonName, count: data.items.length});

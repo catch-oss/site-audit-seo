@@ -1,6 +1,6 @@
 {
   "name": "site-audit-seo",
-  "version": "6.0.1",
+  "version": "6.1.0",
   "description": "Web service and CLI tool for SEO site audit: crawl site, lighthouse all pages, view public reports in browser. Also output to console, json, csv.",
   "main": "src/index.js",
   "type": "module",
@@ -11,9 +11,9 @@
   "scripts": {
     "start": "node src/index.js",
     "server": "node src/server.js",
-    "test": "NODE_OPTIONS=\"--experimental-vm-modules\" jest",
-    "test:coverage": "NODE_OPTIONS=\"--experimental-vm-modules\" jest --coverage",
-    "test:watch": "NODE_OPTIONS=\"--experimental-vm-modules\" jest --watch",
+    "test": "NODE_OPTIONS=\"--experimental-vm-modules\" yarn jest",
+    "test:coverage": "NODE_OPTIONS=\"--experimental-vm-modules\" yarn jest --coverage",
+    "test:watch": "NODE_OPTIONS=\"--experimental-vm-modules\" yarn jest --watch",
     "version": "npm run changelog && git add CHANGELOG.md",
     "postversion": "git push && npm run release",
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s -r 0",
@@ -24,12 +24,12 @@
   },
   "bin": "./src/index.js",
   "workspaces": [
-    "packages/*",
     "cloud-functions"
   ],
   "author": "Stanislav Popov",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
+    "@popstas/headless-chrome-crawler": "https://github.com/catch-oss/headless-chrome-crawler#master",
     "axios": "^1.6.8",
     "body-parser": "^1.19.0",
     "chrome-launcher": "^1.1.0",
