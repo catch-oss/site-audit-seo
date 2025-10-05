@@ -21,6 +21,7 @@ import sanitize from "sanitize-filename";
 // поля описаны в API по ссылке выше
 import fieldsPresets from './presets/scraperFields.js';
 import color from './color.js';
+
 import registry from './registry.js';
 import config from './config.js';
 
@@ -848,7 +849,7 @@ async function scrapeSite (baseUrl, options = {}) {
       startTime,
       partNum: options.partNum,
     })
-    const { jsonName, localPath } = copyJsonToReports(jsonPath, options.socket?.uid, undefined, startTime, true);
+    const { jsonName, localPath } = copyJsonToReports(jsonPath, options.socket?.uid, options.outDir, startTime, true);
 
     // send result json to socket
     socketSend(options.socket, 'result', {name: jsonName, isProgress: true, count: items.length});
@@ -1080,7 +1081,7 @@ async function scrapeSite (baseUrl, options = {}) {
       }
 
       if (options.webService) {
-        const { jsonName } = copyJsonToReports(jsonPath, options.socket.uid, undefined, options.partialFirstStartTime, true);
+        const { jsonName } = copyJsonToReports(jsonPath, options.socket.uid, options.outDir, options.partialFirstStartTime, true);
 
         // send result json to socket
         socketSend(options.socket, 'result', {name: jsonName, count: data.items.length});
