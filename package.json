@@ -36,7 +36,7 @@
     "commander": "^5.0.0",
     "csvtojson": "^2.0.10",
     "expand-home-dir": "0.0.3",
-    "express": "^4.19.2",
+    "express": "^5.1.0",
     "influx": "^5.6.3",
     "lighthouse": "^12.8.2",
     "lodash": "^4.17.21",
