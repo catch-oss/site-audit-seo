@@ -48,7 +48,7 @@
   "devDependencies": {
     "@babel/core": "^7.23.0",
     "@babel/preset-env": "^7.23.0",
-    "jest": "^29.7.0"
+    "jest": "^30.2.0"
   },
   "keywords": [
     "audit",
