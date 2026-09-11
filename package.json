@@ -23,9 +23,6 @@
     "postinstall-puppeteer-fix": "sudo chown -R $USER:$USER \"$(npm prefix -g)/lib/node_modules/site-audit-seo/node_modules/puppeteer/.local-chromium/\""
   },
   "bin": "./src/index.js",
-  "workspaces": [
-    "cloud-functions"
-  ],
   "author": "Stanislav Popov",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
