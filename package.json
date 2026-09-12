@@ -23,20 +23,17 @@
     "postinstall-puppeteer-fix": "sudo chown -R $USER:$USER \"$(npm prefix -g)/lib/node_modules/site-audit-seo/node_modules/puppeteer/.local-chromium/\""
   },
   "bin": "./src/index.js",
-  "workspaces": [
-    "cloud-functions"
-  ],
   "author": "Stanislav Popov",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@popstas/headless-chrome-crawler": "https://github.com/catch-oss/headless-chrome-crawler#master",
     "axios": "^1.6.8",
-    "body-parser": "^1.19.0",
+    "body-parser": "^2.0.0",
     "chrome-launcher": "^1.1.0",
     "commander": "^5.0.0",
     "csvtojson": "^2.0.10",
     "expand-home-dir": "0.0.3",
-    "express": "^4.19.2",
+    "express": "^5.1.0",
     "influx": "^5.6.3",
     "lighthouse": "^12.8.2",
     "lodash": "^4.17.21",
@@ -57,5 +54,9 @@
     "puppeteer",
     "seo",
     "cli"
-  ]
+  ],
+  "packageManager": "yarn@4.12.0+sha512.f45ab632439a67f8bc759bf32ead036a1f413287b9042726b7cc4818b7b49e14e9423ba49b18f9e06ea4941c1ad062385b1d8760a8d5091a1a31e5f6219afca8",
+  "resolutions": {
+    "@puppeteer/browsers": "3.2.2"
+  }
 }

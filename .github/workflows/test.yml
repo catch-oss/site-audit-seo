@@ -12,7 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [20.x, 22.x, 24.x]
+        node-version: [22.x, 24.x, 26.x]
 
     steps:
     - name: Checkout code
@@ -22,18 +22,33 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
 
+    # Corepack is installed from npm rather than relying on the copy bundled
+    # with Node: Node 26 does not ship one, so `corepack enable` on its own
+    # fails on exactly the newest version in the matrix.
+    #
+    # No `cache:` on setup-node. Its yarn cache detection has to run yarn to
+    # find the cache folder, which is not available until this step, and it
+    # would buy very little anyway - this project uses Yarn PnP with a
+    # committed .pnp.cjs, so `yarn install` is a second or two.
+    - name: Enable Corepack
+      run: |
+        npm install -g corepack@latest
+        corepack enable
+
+    # --immutable fails rather than silently rewriting yarn.lock or .pnp.cjs,
+    # so a pull request that forgot to commit a resolution change is caught
+    # here instead of drifting.
     - name: Install dependencies
-      run: npm ci
+      run: yarn install --immutable
 
     - name: Run tests with coverage
-      run: npm run test:coverage
+      run: yarn test:coverage
       env:
         NODE_OPTIONS: --experimental-vm-modules
 
     - name: Upload coverage reports to Codecov
-      if: matrix.node-version == '20.x'
+      if: matrix.node-version == '22.x'
       uses: codecov/codecov-action@v3
       with:
         file: ./coverage/lcov.info
@@ -42,7 +57,7 @@ jobs:
         fail_ci_if_error: false
 
     - name: Check coverage threshold
-      if: matrix.node-version == '20.x'
+      if: matrix.node-version == '22.x'
       run: |
         echo "Checking if coverage meets 20% threshold..."
         node -e "
